@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#09101e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ModelLab">
+<title>ModelLab — Interactive Science</title>
+<style>
+:root{color-scheme:dark;--bg:#09101e;--panel:#111b2e;--line:#2a3a56;--text:#eef4ff;--muted:#a8b8d0;--mint:#7ce2c5;--blue:#8eb8ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{padding:23px clamp(16px,4vw,42px) 17px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--mint);font-size:11px;font-weight:800;letter-spacing:.15em;text-transform:uppercase}
+h1{font-size:clamp(28px,4vw,40px);letter-spacing:-.04em;margin:4px 0}.sub{color:var(--muted);max-width:800px;margin:0}
+main{max-width:1550px;margin:auto;padding:16px clamp(12px,3vw,30px) 28px;display:grid;grid-template-columns:minmax(260px,320px) minmax(0,1fr) minmax(260px,320px);gap:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:17px;min-width:0;overflow:hidden}.pad{padding:17px}h2{font-size:16px;margin:0 0 10px}h3{font-size:14px;margin:0 0 6px}
+label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px}textarea{width:100%;min-height:108px;resize:vertical;background:#081020;color:var(--text);border:1px solid #344866;border-radius:11px;padding:11px;font:inherit}
+button{cursor:pointer;background:#1b2a43;color:var(--text);border:1px solid #3a506e;border-radius:10px;padding:9px 11px;font:inherit;font-size:12px;font-weight:650}button:hover{filter:brightness(1.15)}button.primary{background:var(--mint);color:#06251d;border-color:var(--mint)}button.active{border-color:var(--mint);color:var(--mint);background:#12342f}
+.actions,.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.chips button{font-weight:550}
+.small{font-size:12px;color:var(--muted)}.callout{margin-top:13px;padding:11px;border:1px solid #665c38;background:#2b271b;color:#f0dfad;border-radius:11px;font-size:12px}
+.viewer{display:flex;flex-direction:column;min-height:590px}.viewhead{padding:13px 16px;display:flex;justify-content:space-between;gap:8px;align-items:center;border-bottom:1px solid var(--line)}.viewhead h2{margin:0}#scene{width:100%;height:470px;display:block;touch-action:none}.viewfoot{border-top:1px solid var(--line);padding:12px 15px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+#crumbs{padding:10px 15px 0;display:flex;gap:5px;flex-wrap:wrap}#crumbs button{padding:5px 7px;font-size:11px}
+#info{padding:17px}.tag{display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--mint);font-weight:800;margin-bottom:5px}
+#infoTitle{font-size:20px;line-height:1.2;margin:0 0 9px}#infoText{font-size:13px;color:#c0cce0;line-height:1.65;margin:0 0 14px}
+.source{display:block;border-top:1px solid var(--line);padding-top:12px;margin-top:12px;color:var(--blue);font-size:12px;text-decoration:none}.source:hover{text-decoration:underline}
+#children{display:flex;flex-direction:column;gap:7px;margin-top:14px}#children button{text-align:left;display:flex;justify-content:space-between;gap:8px}#children button span{color:var(--muted);font-weight:400}
+.notice{color:var(--muted);font-size:11px;padding:0 clamp(16px,4vw,42px) 24px;max-width:1550px;margin:auto}
+@media(max-width:1120px){main{grid-template-columns:minmax(240px,300px) minmax(0,1fr)}.details{grid-column:1/-1}.details #info{display:grid;grid-template-columns:1fr 1fr;gap:0 20px}.details #children{grid-column:1/-1}}
+@media(max-width:740px){main{grid-template-columns:1fr}.viewer{grid-row:1;min-height:460px}#scene{height:360px}.details{grid-column:auto}.details #info{display:block}}
+.viewer{position:relative}#tip{position:absolute;pointer-events:none;z-index:5;background:#0b1424ee;border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:12px;white-space:nowrap;transform:translate(12px,12px)}#tip[hidden]{display:none}
+.msg{margin-top:11px;padding:10px 11px;border:1px solid #3a506e;background:#0c1830;border-radius:11px;font-size:12px;color:#c0cce0}.msg[hidden]{display:none}
+button:disabled{opacity:.4;cursor:default;filter:none}button:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--blue);outline-offset:2px}#speedVal{min-width:64px;text-align:center;align-self:center}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}#labels[hidden]{display:none}
+.lbl{position:absolute;left:0;top:0;pointer-events:auto;padding:2px 8px;font-size:11px;font-weight:650;border-radius:999px;background:#0b1424d9;white-space:nowrap}.lbl::after{content:"";position:absolute;left:50%;top:100%;width:1px;height:8px;background:var(--mint);opacity:.7}.lbl.on{border-color:var(--mint);color:var(--mint);background:#12342f}.lbl.back{opacity:.35}
+.note{padding:8px 15px;font-size:11px;color:var(--muted);border-top:1px solid var(--line)}.note[hidden]{display:none}
+html{-webkit-text-size-adjust:100%}body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#scene{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button,.lbl{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.lbl{-webkit-user-select:none;user-select:none}
+textarea{font-size:16px} /* iOS Safari zooms the page when a focused field is smaller than 16px */
+#children button:disabled{opacity:.55;border-style:dashed}
+@media(pointer:coarse){button{min-height:44px;padding:10px 14px;font-size:13px}#crumbs button{min-height:40px;padding:6px 11px;font-size:12px}.lbl{min-height:34px;padding:6px 11px;font-size:12px}#children button{min-height:48px}}
+@media(max-width:740px){.viewer{min-height:0}#scene{height:min(58vh,430px);height:min(58svh,430px);min-height:300px}.viewfoot{padding:10px 12px}#viewHint{flex-basis:100%;cursor:pointer}.note{font-size:12px}}
+@media(max-height:520px) and (orientation:landscape){.viewer{min-height:0}#scene{height:calc(100vh - 150px);height:calc(100svh - 150px);min-height:220px}}
+</style>
+</head>
+<body>
+<header><div class="eyebrow">Interactive science · prototype v0.8</div><h1>ModelLab</h1><p class="sub">Explore a model, select its structures, and follow the science deeper. Every topic includes an explanation and a reliable reading source.</p></header>
+<main>
+<section class="panel pad">
+<h2>Choose a model</h2>
+<label for="prompt">Describe a topic (matched to a built-in model)</label>
+<textarea id="prompt">A plant cell with clickable chloroplasts, and a way to explore thylakoids, the light reactions, and the Calvin cycle.</textarea>
+<div class="actions"><button id="generate" class="primary">Find model</button><button id="reset">Reset view</button></div>
+<div id="promptMsg" class="msg" role="status" hidden></div>
+<div class="chips">
+<button data-kind="animal">Animal cell</button><button data-kind="plant">Plant cell</button><button data-kind="chloroplast">Chloroplast</button><button data-kind="thylakoid">Thylakoid reactions</button><button data-kind="gas">Gas particles</button><button data-kind="mitosis">Mitosis</button>
+</div>
+<div class="callout"><strong>What this version does:</strong> it offers 8 hand-built 3D models with written explanations. No paid AI, account or generation is involved: the prompt box only matches keywords to those models and cannot create new ones. Biology links go to OpenStax Biology 2e and the physics link to OpenStax University Physics, both free textbooks.</div>
+<p class="small">Drag to rotate · scroll/pinch to zoom · hover to preview a structure's name · click a structure or its label to inspect it · use the buttons in the details panel to go deeper (a greyed-out button names the model to open first) · Ctrl/⌘+Enter finds a model from the prompt.</p>
+</section>
+<section class="panel viewer">
+<div class="viewhead"><h2 id="sceneTitle">Plant cell</h2><span class="small" id="status">3D interactive</span></div>
+<div id="crumbs" role="navigation" aria-label="Model path"></div>
+<canvas id="scene" aria-label="Interactive 3D scientific model"></canvas><div id="tip" role="tooltip" hidden></div><div id="labels"></div><div id="modelNote" class="note" hidden></div>
+<div class="viewfoot"><span class="small" id="viewHint">Select a structure to learn more</span><div class="actions" style="margin:0"><button id="labelsBtn" hidden>Hide labels</button><button id="pause">Pause rotation</button><button id="slower">− Speed</button><span class="small" id="speedVal"></span><button id="faster">+ Speed</button></div></div>
+</section>
+<section class="panel details"><div id="info" aria-live="polite">
+<div class="tag">Selected structure</div><h2 id="infoTitle">Welcome to ModelLab</h2><p id="infoText">Click a visible structure in the 3D scene. You will get an explanation and a link to a reliable source.</p><a class="source" id="source" href="https://openstax.org/books/biology-2e/pages/4-3-eukaryotic-cells" target="_blank" rel="noopener">Read the biology source ↗</a>
+<div id="children"></div>
+</div></section>
+</main>
+<div class="notice">Educational illustrations are simplified, not to scale, and are not molecular-level simulations. Only the gas particles and the proton motion are animated, and both are illustrative: gas particles move at random speeds and bounce off the walls without colliding with each other, and no pressure, temperature or energy is calculated. All other scenes are static illustrations. Always check detailed coursework against your class materials and linked references.</div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/controls/OrbitControls.js';
+
+/* ModelLab v0.4 — script layout
+   1. DATA      SOURCES, topics (science text), actions (navigation links)
+   2. REGISTRY  MODELS (one entry per supported model) + prompt routing (pure functions, no Three.js)
+   3. ENGINE    renderer, camera, lights, object helpers
+   4. SCENES    make*() builders: geometry only
+   5. UI        navigation, details panel, prompt box, controls, picking, animation loop
+   To add a model: (a) add its topics in 1, (b) write makeX() in 4, (c) add one MODELS entry in 2
+   (label, parent, start topic, camera, builder, status text, example prompt, keywords). */
+/*==DATA_START==*/
+// ===== 1. DATA =====
+const SOURCES={
+ cells:{label:'OpenStax Biology 2e — Eukaryotic Cells',url:'https://openstax.org/books/biology-2e/pages/4-3-eukaryotic-cells'},
+ endo:{label:'OpenStax Biology 2e — Endomembrane System',url:'https://openstax.org/books/biology-2e/pages/4-4-the-endomembrane-system-and-proteins'},
+ photo:{label:'OpenStax Biology 2e — Photosynthesis Overview',url:'https://openstax.org/books/biology-2e/pages/8-1-overview-of-photosynthesis'},
+ light:{label:'OpenStax Biology 2e — Light-Dependent Reactions',url:'https://openstax.org/books/biology-2e/pages/8-2-the-light-dependent-reactions-of-photosynthesis'},
+ calvin:{label:'OpenStax Biology 2e — Calvin Cycle',url:'https://openstax.org/books/biology-2e/pages/8-3-using-light-energy-to-make-organic-molecules'},
+ mitosis:{label:'OpenStax Biology 2e — The Cell Cycle',url:'https://openstax.org/books/biology-2e/pages/10-2-the-cell-cycle'},
+ gas:{label:'OpenStax University Physics Vol. 2 — Pressure, Temperature, and RMS Speed',url:'https://openstax.org/books/university-physics-volume-2/pages/2-2-pressure-temperature-and-rms-speed'}
+};
+const topics={
+ membrane:{title:'Cell membrane',category:'Cell structure',text:'The plasma membrane is a selectively permeable boundary made mainly of a phospholipid bilayer with embedded proteins. It helps regulate the movement of substances into and out of the cell and supports communication with the surroundings.',source:'cells'},
+ cytoplasm:{title:'Cytoplasm',category:'Cell structure',text:'The cytoplasm includes the cytosol and the structures suspended in it between the plasma membrane and the nucleus. Many chemical reactions take place here, and it provides the environment in which organelles operate.',source:'cells'},
+ nucleus:{title:'Nucleus',category:'Organelle',text:'The nucleus houses most of a eukaryotic cell’s DNA. Its envelope contains pores that regulate exchange with the cytoplasm. DNA instructions are used to make RNA, helping the cell regulate protein production and its activities.',source:'cells'},
+ nucleolus:{title:'Nucleolus',category:'Nuclear structure',text:'The nucleolus is a dense region inside the nucleus where ribosomal RNA is made and ribosome subunits are assembled. Those subunits later take part in protein synthesis in the cytoplasm.',source:'cells'},
+ mitochondria:{title:'Mitochondrion',category:'Organelle',text:'Mitochondria convert energy from nutrients into ATP through cellular respiration. Their inner membrane is folded into cristae, which increase the membrane area available for important energy-conversion machinery. Plant cells also have mitochondria.',source:'cells'},
+ cristae:{title:'Cristae',category:'Mitochondrial structure',text:'Cristae are folds of the inner mitochondrial membrane. The membrane contains components of the electron transport chain and ATP synthase, which help generate ATP during cellular respiration.',source:'cells'},
+ ribosome:{title:'Ribosome',category:'Cell structure',text:'Ribosomes translate messenger RNA instructions into a chain of amino acids, building proteins. They may float freely in the cytoplasm or attach to the rough endoplasmic reticulum.',source:'cells'},
+ roughER:{title:'Rough endoplasmic reticulum',category:'Organelle',text:'The rough ER is a network of membranes with ribosomes on its cytoplasmic surface. It helps synthesize and process proteins destined for secretion, membranes, or certain organelles.',source:'endo'},
+ smoothER:{title:'Smooth endoplasmic reticulum',category:'Organelle',text:'The smooth ER lacks the ribosomes that give rough ER its dotted appearance. Its functions include lipid synthesis, detoxification of some chemicals, and calcium storage in specialized cells.',source:'endo'},
+ golgi:{title:'Golgi apparatus',category:'Organelle',text:'The Golgi apparatus modifies, sorts, and packages proteins and lipids arriving from the endoplasmic reticulum. It helps route these materials to the places where they are needed.',source:'endo'},
+ lysosome:{title:'Lysosome',category:'Organelle',text:'Lysosomes contain digestive enzymes that break down certain macromolecules and worn-out cell components so their building blocks can be reused. Most plant cells use lytic vacuoles for many comparable digestive functions.',source:'cells'},
+ chloroplast:{title:'Chloroplast',category:'Organelle · plant cell',text:'Chloroplasts are the organelles where photosynthesis occurs in plants and algae. They have an outer and inner envelope membrane, internal thylakoid membranes, and a fluid-filled stroma.',source:'photo',children:['openChloroplast'],enters:['chloroplast']},
+ cellWall:{title:'Cell wall',category:'Plant-cell structure',text:'The plant cell wall lies outside the plasma membrane. Its cellulose-rich structure helps support and protect the cell and contributes to the shape of plant tissues.',source:'cells'},
+ vacuole:{title:'Central vacuole',category:'Plant-cell organelle',text:'The large central vacuole stores water and dissolved substances. Water uptake helps it maintain turgor pressure, which presses the cell contents against the wall and supports the plant.',source:'cells'},
+ stroma:{title:'Stroma',category:'Chloroplast structure',text:'The stroma is the fluid-filled region inside the chloroplast’s inner membrane, surrounding the thylakoids. The Calvin cycle takes place there, using ATP and NADPH from the light-dependent reactions to help incorporate carbon dioxide into organic molecules.',source:'photo',children:['openCalvin'],enters:['calvin']},
+ granum:{title:'Granum (stack of thylakoids)',category:'Chloroplast structure',text:'A granum is a stack of flattened thylakoid membrane sacs. The thylakoid membranes contain chlorophyll, photosystems, electron-transfer components, and ATP synthase used in the light-dependent reactions.',source:'photo',children:['openThylakoid'],enters:['thylakoid']},
+ thylakoid:{title:'Thylakoid membrane and lumen',category:'Chloroplast structure',text:'A thylakoid is a flattened membrane sac. Its membrane contains the photosynthetic electron-transfer machinery; the interior space is the lumen. During the light-dependent reactions, protons accumulate in the lumen and then flow through ATP synthase back toward the stroma.',source:'light',children:['openThylakoid','openLight'],enters:['thylakoid','light']},
+ psii:{title:'Photosystem II',category:'Light-dependent reactions',text:'Photosystem II absorbs light energy and uses it to drive the extraction of electrons from water. Water splitting releases electrons and protons and produces oxygen. Electrons then enter the photosynthetic electron transport chain.',source:'light'},
+ etc:{title:'Electron transport chain',category:'Light-dependent reactions',text:'As electrons move between photosystem II and photosystem I through membrane-associated carriers, energy is used to help move protons into the thylakoid lumen. This contributes to the proton gradient that powers ATP synthesis.',source:'light'},
+ psi:{title:'Photosystem I',category:'Light-dependent reactions',text:'Photosystem I absorbs light to re-energize electrons. These electrons ultimately help reduce NADP⁺ to NADPH, an energy-rich electron carrier used by the Calvin cycle.',source:'light'},
+ atp:{title:'ATP synthase',category:'Membrane protein complex',text:'ATP synthase uses energy from protons moving down their electrochemical gradient across the thylakoid membrane to make ATP from ADP and inorganic phosphate.',source:'light'},
+ light:{title:'Light-dependent reactions',category:'Photosynthesis process',text:'These reactions occur in the thylakoid membrane. Light energizes electrons; water supplies replacement electrons and releases oxygen; electron transfer helps establish a proton gradient; and ATP synthase makes ATP. NADPH is also produced. ATP and NADPH then support the Calvin cycle.',source:'light',children:['openCalvin']},
+ calvin:{title:'Calvin cycle',category:'Photosynthesis process',text:'The Calvin cycle occurs in the stroma. It incorporates carbon from CO₂ into organic molecules, uses ATP and NADPH produced by the light-dependent reactions, and regenerates the CO₂-acceptor molecule RuBP. Its net output includes G3P, a molecule used to build carbohydrates. It is not simply a “night reaction”; it depends on products of the light reactions and is regulated by light.',source:'calvin'},
+ gas:{title:'Gas particles in a sealed container',category:'Physics · illustrative model',text:'Gas pressure arises from particles colliding with the container walls. At a fixed volume, raising the gas temperature increases average particle kinetic energy and, for a fixed amount of gas, raises the pressure. In this scene the particles move at random speeds and bounce off the walls only; they do not collide with one another, and no temperature, pressure or energy is calculated. Treat it as an illustration of random motion, not a measurement.',source:'gas'},
+ prophase:{title:'Prophase',category:'Mitosis',text:'During prophase, chromatin condenses into more visible chromosomes and the mitotic spindle begins to form. The exact timing of nuclear-envelope breakdown is described separately as prometaphase in many textbooks.',source:'mitosis'},
+ metaphase:{title:'Metaphase',category:'Mitosis',text:'During metaphase, chromosomes align near the cell’s equatorial plane. Spindle microtubules attach to chromosome kinetochores so that sister chromatids can later be separated.',source:'mitosis'},
+ anaphase:{title:'Anaphase',category:'Mitosis',text:'During anaphase, sister chromatids separate and are moved toward opposite poles of the cell. This helps ensure each future daughter cell receives one copy of each chromosome.',source:'mitosis'},
+ telophase:{title:'Telophase',category:'Mitosis',text:'During telophase, chromosomes arrive at opposite poles and new nuclear envelopes form around the chromosome sets. Cytokinesis divides the cytoplasm and usually produces two daughter cells.',source:'mitosis'}
+};
+const actions={
+ openChloroplast:{title:'Explore inside the chloroplast',target:'chloroplast',desc:'Open a larger view of the chloroplast interior.'},
+ openThylakoid:{title:'Zoom into a thylakoid',target:'thylakoid',desc:'Explore the membrane complexes involved in light reactions.'},
+ openLight:{title:'Explore light-dependent reactions',target:'light',desc:'Follow light energy, electrons, protons, ATP, NADPH, and oxygen.'},
+ openCalvin:{title:'Explore the Calvin cycle',target:'calvin',desc:'See where CO₂ is incorporated into organic molecules.'}
+};
+// ===== 2. MODEL REGISTRY =====
+// parent: the model you came from (drives breadcrumbs and prompt routing). start: topic selected on entry.
+// kw: strong keywords. weak (animal only): generic organelle words, used only when nothing else matches.
+const MODELS={
+ animal:{label:'Animal cell',parent:null,start:'nucleus',cam:[7,5,9],build:makeAnimal,mode:'Simplified static illustration',example:'Detailed animal cell with clickable organelles',kw:/\banimals?\b|lysosome|centriole/,weak:/nucle(us|i|olus)|mitochondri|golgi|endoplasmic|\ber\b|ribosome|organelle|eukaryot|cytoplasm|cell membrane/},
+ plant:{label:'Plant cell',parent:null,start:'chloroplast',cam:[6.4,3.8,9.6],build:makePlant,mode:'Cut-away illustration · not to scale',note:'Cut-away, not to scale: the wall and membrane are drawn thick and organelles are enlarged and spaced out. Grana (stacked thylakoid discs) and ER ribosomes are shown in more detail; the nucleus (no pores), mitochondria (no cristae) and vacuole are simplified shapes. Organelle numbers and positions are illustrative; the large central vacuole pushing organelles to the edge is typical of mature plant cells.',example:'Detailed plant cell with clickable chloroplasts',kw:/\bplants?\b|cell wall|vacuole|turgor/},
+ chloroplast:{label:'Chloroplast',parent:'plant',start:'chloroplast',cam:[6,4,7],build:makeChloroplast,mode:'Simplified static illustration',example:'Explore the inside of a chloroplast',kw:/chloroplast|photosynthe|\bstroma\b|chlorophyll/},
+ thylakoid:{label:'Thylakoid',parent:'chloroplast',start:'thylakoid',cam:[0,4.5,10],build:makeThylakoid,mode:'Illustrative animation · protons are not simulated',example:'Explore the thylakoid membrane and light-dependent reactions',kw:/thylakoid|\bgran(um|a)\b|\batp synthase\b/},
+ light:{label:'Light reactions',parent:'thylakoid',start:'light',cam:[0,4.5,10],build:makeLight,mode:'Illustrative animation · protons are not simulated',example:'Follow the light reactions: electrons, protons, ATP and NADPH',kw:/light[- ]dependent|light reactions?|photosystem|electron transport|water splitting/},
+ calvin:{label:'Calvin cycle',parent:'chloroplast',start:'calvin',cam:[0,1.5,7],build:makeCalvin,mode:'Simplified static diagram',example:'Show the Calvin cycle in the stroma',kw:/calvin|carbon fixation|\brubisco\b|\bg3p\b|light[- ]independent|dark reactions?/},
+ gas:{label:'Gas particles',parent:null,start:'gas',cam:[7,5,9],build:makeGas,mode:'Illustrative animation · no physics calculated',example:'Gas particles moving inside a sealed container',kw:/\bgas(es)?\b(?!\s+exchange)|kinetic theory|ideal gas|boyle|sealed container/},
+ mitosis:{label:'Mitosis',parent:null,start:'prophase',cam:[0,3.5,13],build:makeMitosis,mode:'Simplified static stage overview',example:'Show the four main stages of mitosis',kw:/mitosis|mitotic|prophase|metaphase|anaphase|telophase|cell division|chromosomes?|\bspindle\b/}
+};
+const modelPath=id=>{const p=[];for(let m=id;m;m=MODELS[m].parent)p.unshift(m);return p};
+// Keyword routing only. Returns {type:'match',kind,hits,weak} | {type:'ambiguous',options,why} | {type:'none'}.
+// With several matches in one family, start at their lowest common ancestor so the rest stays reachable by navigation.
+function routePrompt(text){
+ let hits=Object.keys(MODELS).filter(id=>MODELS[id].kw.test(text)),weak=false;
+ if(!hits.length&&MODELS.animal.weak.test(text)){hits=['animal'];weak=true}
+ if(!hits.length)return /\bcells?\b/.test(text)?{type:'ambiguous',options:['animal','plant'],why:'Your prompt mentions a cell but not which one. Choose a model:'}:{type:'none'};
+ const roots=[...new Set(hits.map(id=>modelPath(id)[0]))];
+ if(roots.length>1)return{type:'ambiguous',options:roots,why:'Your prompt matches more than one separate model. Choose one to open:'};
+ const chains=hits.map(modelPath);let kind=null;
+ for(let i=0;chains.every(c=>c[i]&&c[i]===chains[0][i]);i++)kind=chains[0][i];
+ return{type:'match',kind,hits,weak};
+}
+/*==NAV_START==*/
+// ===== NAVIGATION RULES: the single source of truth; every route (click, label, panel button, crumb, chip, prompt) calls these =====
+// Hierarchy = MODELS[id].parent. You may DRILL into a model only from its parent (or from a model listed in its optional `via` array).
+// You may always go UP to an ancestor, stay put, or open a top-level model (parent:null) as an entry point.
+// A structure is always clickable for information. topics[key].enters lists the models it opens; enterTarget() keeps only those canDrill() allows.
+const ALLOW_MENU_JUMPS=false; // false: chips and the prompt obey the hierarchy too. true: they may open any model directly (old behaviour)
+const canDrill=(from,to)=>!!MODELS[to]&&from!==to&&(MODELS[to].parent===from||(MODELS[to].via||[]).includes(from));
+const canEnter=(from,to)=>!!MODELS[to]&&(from===to||!MODELS[to].parent||modelPath(from).includes(to)||canDrill(from,to));
+function resolveEntry(from,to){const p=modelPath(to);for(let i=p.length-1;i>=0;i--)if(canEnter(from,p[i]))return p[i];return p[0]} // deepest model on the way to `to` that is allowed from here
+const enterTarget=(topic,from)=>((topic&&topic.enters)||[]).find(id=>canDrill(from,id))||null;
+/*==NAV_END==*/
+/*==DATA_END==*/
+// ===== 3. ENGINE =====
+const canvas=document.querySelector('#scene');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0x09101e,1);renderer.outputColorSpace=THREE.SRGBColorSpace;
+const scene=new THREE.Scene();scene.fog=new THREE.Fog(0x09101e,16,35);
+const camera=new THREE.PerspectiveCamera(43,1,.1,100);camera.position.set(7,5,9);
+let dirty=true;
+const controls=new OrbitControls(camera,renderer.domElement);controls.addEventListener("change",()=>{dirty=true});controls.enableDamping=true;controls.minDistance=3;controls.maxDistance=24;
+scene.add(new THREE.HemisphereLight(0xd8e8ff,0x202b46,2.1));const key=new THREE.DirectionalLight(0xffffff,2.5);key.position.set(6,8,6);scene.add(key);
+const rim=new THREE.PointLight(0x64e8c8,18,28);rim.position.set(-5,3,-4);scene.add(rim);
+const grid=new THREE.GridHelper(18,18,0x293b59,0x17243b);grid.position.y=-3.4;scene.add(grid);
+const root=new THREE.Group();scene.add(root);const clickable=[];let animated=[],spinning=!matchMedia('(prefers-reduced-motion: reduce)').matches&&!matchMedia('(pointer:coarse)').matches,spinRate=.3,hovered=null,clock=new THREE.Clock(),current='plant',selected='chloroplast';
+const mat=(c,o=1)=>new THREE.MeshStandardMaterial({color:c,transparent:o<1,opacity:o,roughness:.4});
+// v0.5 plant-cell look: PBR materials with a procedural studio environment (no image assets). Loaded lazily; if it fails, materials still render with the scene lights.
+let ENV=null;
+const pm=(c,o={})=>{const op=o.op??1,m=new THREE.MeshStandardMaterial({color:c,roughness:o.r??.45,metalness:0,transparent:op<1,opacity:op,side:o.side??THREE.FrontSide,depthWrite:op>=.5,envMap:ENV,envMapIntensity:.9});m.userData.pbr=1;return m};
+import('https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/environments/RoomEnvironment.js').then(m=>{const g=new THREE.PMREMGenerator(renderer);ENV=g.fromScene(new m.RoomEnvironment(),.04).texture;g.dispose();dirty=true;clickable.forEach(o=>{if(o.material.userData.pbr){o.material.envMap=ENV;o.material.needsUpdate=true}})}).catch(()=>{});
+function mesh(g,m,name,topic,pos=[0,0,0],parent=root){const o=new THREE.Mesh(g,m);o.position.set(...pos);o.name=name;o.userData.topic=topic;parent.add(o);clickable.push(o);return o}
+function ball(name,topic,pos,scale,color,opacity=1,parent=root){const o=mesh(new THREE.SphereGeometry(1,28,20),mat(color,opacity),name,topic,pos,parent);o.scale.set(...scale);return o}
+function line(name,topic,pts,r,color,parent=root){const curve=new THREE.CatmullRomCurve3(pts.map(p=>new THREE.Vector3(...p)));return mesh(new THREE.TubeGeometry(curve,32,r,7,false),mat(color),name,topic,[0,0,0],parent)}
+
+function clear(){while(root.children.length){const c=root.children[0];root.remove(c);c.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material){if(Array.isArray(n.material))n.material.forEach(m=>m.dispose());else n.material.dispose()}})}clickable.length=0;animated=[];hovered=null;clearLabels()}
+function setCam(pos,target=[0,0,0]){camera.position.set(...pos);controls.target.set(...target);controls.update()}
+// ===== 4. SCENE BUILDERS (geometry only; topic keys must exist in topics) =====
+function makeAnimal(){
+ document.querySelector('#sceneTitle').textContent='Animal cell · organelles';
+ ball('Cell membrane','membrane',[0,0,0],[3.3,2.25,2.6],0x63d5b7,.09);
+ const shell=mesh(new THREE.SphereGeometry(1,42,28),new THREE.MeshStandardMaterial({color:0x70e1cb,wireframe:true,transparent:true,opacity:.26}),'Cell membrane','membrane');shell.scale.set(3.3,2.25,2.6);
+ ball('Nucleus','nucleus',[-.45,.25,.15],[1.08,1.05,.98],0x7c8df4,.94);
+ ball('Nucleolus','nucleolus',[-.18,.43,.85],[.3,.3,.26],0xc5b8ff);
+ for(let i=0;i<3;i++){let p=[-1.8+i*1.5,-.7+(i%2)*1.2,.5-i*.7];let m=ball('Mitochondrion','mitochondria',p,[.67,.32,.35],0xf0a35b);m.rotation.z=.5+i*.4;line('Cristae','cristae',[[p[0]-.4,p[1],p[2]+.2],[p[0]-.15,p[1]+.1,p[2]+.25],[p[0]+.1,p[1]-.08,p[2]+.25],[p[0]+.38,p[1]+.03,p[2]+.2]],.035,0x7b432e)}
+ // rough and smooth ER around nucleus
+ for(let i=0;i<4;i++){const z=-.5+i*.32;line('Rough ER','roughER',[[-1.35,.65,z],[-1.7,.2,z+.08],[-1.45,-.2,z],[-1.8,-.6,z+.08]],.065,0x5d9edb);for(let j=0;j<3;j++)ball('ER ribosome','ribosome',[-1.6+j*.18,.2,z+.1],[.055,.055,.055],0x9ee7f5)}
+ for(let i=0;i<3;i++)line('Smooth ER','smoothER',[[.7,.7,-.7+i*.22],[1.2,.95,-.45+i*.22],[1.5,.5,-.2+i*.22],[1.15,.25,.1+i*.22]],.06,0x8a9bce);
+ for(let i=0;i<5;i++){const y=-.35+i*.18;line('Golgi apparatus','golgi',[[.5+y*.25,-1.1+y*.2,.7],[.9+y*.25,-1.15+y*.2,.7],[1.25+y*.25,-1.08+y*.2,.7]],.075,0xd9a0fa)}
+ for(let i=0;i<7;i++){let p=[(Math.random()-.5)*4,(Math.random()-.5)*2.7,(Math.random()-.5)*3.6];ball('Ribosome','ribosome',p,[.07,.07,.07],0x78d6ef)}
+ for(let i=0;i<3;i++)ball('Lysosome','lysosome',[1.8-i*.35,.45-i*.65,1.1-i*.7],[.22,.22,.22],0xe56f94);
+ ball('Cytoplasm','cytoplasm',[0,-1.6,-.4],[.24,.24,.24],0x4b9c90,.45);
+}
+/*==PURE_START==*/
+// Plant-cell layout (scene units). Cytoplasm is the thin band between the membrane and the vacuole; organelles sit in it.
+const PLANT={wall:{h:[3.6,2.4,1.85],r:.45,t:[0,.14,.22]},cut:{x:.6,z:.35},
+ vac:{c:[.65,0,0],h:[2.35,1.5,.95],r:.75},nuc:{c:[-2.5,.35,-.2],s:[.78,.8,.74]},nucleolus:{c:[-2.38,.45,-.02],s:.2},
+ cps:[[-.6,1.88,.3,0,.15],[2,1.86,-.25,0,-.2],[.5,-1.88,.2,0,.3],[-1.1,-.3,1.33,1,0],[1.2,.25,-1.33,1,.4]],cpS:[.62,.25,.34],
+ mito:[[3.19,-.6,.1,0],[-2.9,-1.3,.5,.5],[-1.4,-1.85,.6,1.57]],mitoS:[.085,.215,.085],
+ er:[[-2.45,.15,.95],[-2.45,-.2,1.38]],erW:1.3,erH:.95,erAmp:.12};
+// Rounded-box shell from a subdivided box surface (flat xyz array). Vertices are clustered toward the edges, pushed onto a
+// radius-r rounded box, and triangles whose centre satisfies cut(x,y,z) are removed to make the cut-away opening.
+function roundShell(pos,hx,hy,hz,r,cut){
+ const ix=hx-r,iy=hy-r,iz=hz-r,k=Math.PI/2,P=[],N=[],q=new Float32Array(pos.length),n=new Float32Array(pos.length),cl=(v,m)=>Math.max(-m,Math.min(m,v));
+ for(let i=0;i<pos.length;i+=3){const x=hx*Math.sin(k*pos[i]/hx),y=hy*Math.sin(k*pos[i+1]/hy),z=hz*Math.sin(k*pos[i+2]/hz),cx=cl(x,ix),cy=cl(y,iy),cz=cl(z,iz),dx=x-cx,dy=y-cy,dz=z-cz,l=Math.hypot(dx,dy,dz)||1;
+  n[i]=dx/l;n[i+1]=dy/l;n[i+2]=dz/l;q[i]=cx+n[i]*r;q[i+1]=cy+n[i+1]*r;q[i+2]=cz+n[i+2]*r}
+ for(let t=0;t<q.length;t+=9){if(cut&&cut((q[t]+q[t+3]+q[t+6])/3,(q[t+1]+q[t+4]+q[t+7])/3,(q[t+2]+q[t+5]+q[t+8])/3))continue;for(let j=0;j<9;j++){P.push(q[t+j]);N.push(n[t+j])}}
+ return{pos:new Float32Array(P),nrm:new Float32Array(N)};
+}
+// Click resolution. objs = unique hit objects, nearest first. Boundary objects (cell wall/membrane) never hide what is inside them;
+// an object that contains other hit objects (o.userData.within) yields to them; otherwise the nearest object wins.
+function resolvePick(objs,isBoundary){
+ const dive=list=>{const o=list[0];if(!o)return null;const inner=list.filter(x=>x!==o&&(x.userData.within||[]).includes(o));return inner.length?dive(inner):o};
+ return dive(objs.filter(o=>!isBoundary(o)))||objs.find(isBoundary)||null;
+}
+/*==PURE_END==*/
+function shellGeo(hx,hy,hz,r,seg,cut){const b=new THREE.BoxGeometry(hx*2,hy*2,hz*2,seg,seg,seg).toNonIndexed(),d=roundShell(b.attributes.position.array,hx,hy,hz,r,cut),g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(d.pos,3));g.setAttribute('normal',new THREE.BufferAttribute(d.nrm,3));b.dispose();return g}
+function granaGeo(){const pts=[],R=.115,h=.032,gp=.018;for(let k=0;k<4;k++){const y=-.09+k*(h+gp);pts.push(new THREE.Vector2(0,y),new THREE.Vector2(R,y),new THREE.Vector2(R,y+h),new THREE.Vector2(0,y+h))}return new THREE.LatheGeometry(pts,18)}
+// HTML labels pinned to 3D anchor points. They are buttons, so they also work for touch and keyboard selection.
+const labels=[],_lv=new THREE.Vector3();
+function addLabel(text,topic,pos){const el=document.createElement('button');el.className='lbl';el.textContent=text;el.addEventListener('click',()=>{if(tr)return;activateStructure(topic)});document.querySelector('#labels').append(el);labels.push({el,topic,p:new THREE.Vector3(...pos),on:false,back:false})}
+function clearLabels(){labels.forEach(l=>l.el.remove());labels.length=0}
+function updateLabels(){if(!labels.length)return;const w=canvas.clientWidth,h=canvas.clientHeight,ox=canvas.offsetLeft,oy=canvas.offsetTop;root.updateMatrixWorld();
+ for(const l of labels){_lv.copy(l.p);root.localToWorld(_lv);const back=_lv.dot(camera.position)<0;_lv.project(camera);const vis=_lv.z<1;l.el.style.display=vis?'':'none';if(!vis)continue;
+  l.el.style.transform=`translate(${ox+(_lv.x*.5+.5)*w}px,${oy+(-_lv.y*.5+.5)*h}px) translate(-50%,calc(-100% - 8px))`;
+  const on=l.topic===selected;if(on!==l.on){l.on=on;l.el.classList.toggle('on',on)}if(back!==l.back){l.back=back;l.el.classList.toggle('back',back)}}}
+const SEG=matchMedia('(pointer:coarse)').matches?28:40; // lighter shells on phones
+function makePlant(){
+ document.querySelector('#sceneTitle').textContent='Plant cell · cut-away view';
+ const A=PLANT,S=THREE.DoubleSide,sg=new THREE.SphereGeometry(1,40,28);
+ const P=(g,m,name,topic,pos,o={},parent=root)=>{const k=mesh(g,m,name,topic,pos,parent);k.userData.op=m.opacity;Object.assign(k.userData,o);if(o.ro)k.renderOrder=o.ro;return k};
+ const cutFn=(x,y,z)=>x>A.cut.x&&z>A.cut.z,[wx,wy,wz]=A.wall.h,t=A.wall.t,shell=(i,col,name,topic,ro)=>P(shellGeo(wx-t[i],wy-t[i],wz-t[i],A.wall.r-t[i],SEG,cutFn),pm(col,{op:.2,side:S}),name,topic,[0,0,0],{boundary:true,ro});
+ shell(0,0xb7c98a,'Cell wall','cellWall',1);shell(1,0xa3bd78,'Cell wall','cellWall',1);shell(2,0x63d5b7,'Cell membrane','membrane',2);
+ P(shellGeo(...A.vac.h,A.vac.r,24,null),pm(0x5aa9e6,{op:.4}),'Central vacuole','vacuole',A.vac.c,{boundary:false,ro:3});
+ const nuc=P(sg,pm(0x8a8cf0,{op:.4}),'Nucleus','nucleus',A.nuc.c,{boundary:false,ro:4});nuc.scale.set(...A.nuc.s);
+ P(sg,pm(0xd2c6ff,{r:.5}),'Nucleolus','nucleolus',A.nucleolus.c,{within:[nuc]}).scale.setScalar(A.nucleolus.s);
+ const gG=granaGeo();
+ A.cps.forEach(([x,y,z,flip,ry])=>{const g=new THREE.Group();g.position.set(x,y,z);g.rotation.set(flip?Math.PI/2:0,ry,0);root.add(g);
+  const env=P(sg,pm(0x58c47e,{op:.3}),'Chloroplast','chloroplast',[0,0,0],{boundary:false,ro:4},g);env.scale.set(...A.cpS);
+  [-.33,0,.33].forEach((gx,j)=>P(gG,pm(0x1f8f5f),'Granum (stack of thylakoids)','granum',[gx,0,(j-1)*.07],{within:[env]},g))});
+ const mg=new THREE.CapsuleGeometry(.085,.26,4,10);
+ A.mito.forEach(([x,y,z,rz])=>{P(mg,pm(0xe8934a,{r:.5}),'Mitochondrion','mitochondria',[x,y,z]).rotation.z=rz});
+ // rough ER: two folded sheets studded with ribosomes (instanced). Wave is deterministic, so the scene is identical every build.
+ const wave=(u,v,si)=>A.erAmp*.6*Math.sin(u*5+si)+A.erAmp*.4*Math.sin(v*6),rp=[];
+ A.er.forEach(([x,y,z],si)=>{const pg=new THREE.PlaneGeometry(A.erW,A.erH,16,12),p=pg.attributes.position;
+  for(let i=0;i<p.count;i++){const u=p.getX(i),v=p.getY(i),zz=wave(u,v,si);p.setZ(i,zz);if(((i%17)+Math.floor(i/17))%2===0){rp.push([x+u,y+v,z+zz+.03],[x+u,y+v,z+zz-.03])}}
+  pg.computeVertexNormals();P(pg,pm(0x5aa4d9,{r:.55,side:S}),'Rough endoplasmic reticulum','roughER',[x,y,z])});
+ const im=new THREE.InstancedMesh(new THREE.SphereGeometry(.03,8,6),pm(0x9fe6f2,{r:.5}),rp.length),d=new THREE.Object3D();
+ rp.forEach((q,i)=>{d.position.set(...q);d.updateMatrix();im.setMatrixAt(i,d.matrix)});im.name='Ribosomes (on rough ER)';im.userData.topic='ribosome';im.userData.op=1;root.add(im);clickable.push(im);
+ addLabel('Cell wall','cellWall',[-1,2.46,1.2]);addLabel('Cell membrane','membrane',[-3,.9,1.64]);addLabel('Central vacuole','vacuole',[1.4,.3,.95]);
+ addLabel('Nucleus','nucleus',[-2.5,1.15,-.2]);addLabel('Rough ER','roughER',[-2.9,-.3,1.2]);addLabel('Chloroplast','chloroplast',[-.6,2.15,.3]);
+ addLabel('Granum','granum',[2,1.98,-.25]);addLabel('Mitochondrion','mitochondria',[3.19,-.35,.1]);addLabel('Cytoplasm','cytoplasm',[-2.6,-1.55,-.2]);
+}
+function makeChloroplast(){
+ document.querySelector('#sceneTitle').textContent='Chloroplast · internal structures';
+ ball('Chloroplast envelope','chloroplast', [0,0,0],[3.4,2.15,1.8],0x72c68e,.12);
+ const outer=mesh(new THREE.SphereGeometry(1,36,24),new THREE.MeshStandardMaterial({color:0x9ce7a9,wireframe:true,transparent:true,opacity:.5}),'Outer and inner envelope','chloroplast');outer.scale.set(3.4,2.15,1.8);
+ // flattened green thylakoid discs in stacks
+ for(let stack=0;stack<4;stack++){const x=-1.9+stack*1.25,z=(stack%2)*.3-.15;for(let j=0;j<5;j++){const disc=mesh(new THREE.CylinderGeometry(.47,.47,.13,24),mat(j===4?0x3b9c68:0x267b56),`Thylakoid disc ${stack+1}.${j+1}`,'thylakoid',[x,.55-j*.24,z]);disc.rotation.x=Math.PI/2;}ball('Granum stack','granum',[x,.1,z],[.53,.1,.45],0x61c98a,.25)}
+ ball('Stroma','stroma',[0,-1.35,.4],[.25,.25,.25],0x9adca9,.7);
+ line('Stroma lamella','granum',[[-2,-.5,.4],[-1,-.6,.35],[0,-.5,.35],[1,-.65,.35],[2,-.5,.35]],.07,0x7fce98);
+}
+function makeThylakoid(){
+ document.querySelector('#sceneTitle').textContent='Thylakoid membrane · light reactions';
+ mesh(new THREE.BoxGeometry(8,.18,2.6),mat(0x357f63),'Thylakoid membrane','thylakoid');
+ // complexes embedded in the membrane
+ ball('Photosystem II','psii',[-2.65,.38,0],[.55,.65,.55],0x70c6ee);
+ ball('Photosystem I','psi',[.65,.38,0],[.55,.65,.55],0xf3cb68);
+ ball('ATP synthase','atp',[2.65,.05,.1],[.3,.85,.35],0xb99af7);
+ line('Electron transport chain','etc',[[-2.05,.28,0],[-1.55,.58,.1],[-.95,.32,0],[-.35,.55,-.1],[.1,.3,0]],.09,0xf0a35b);
+ // proton spheres on lumen side and moving down through synthase conceptually
+ for(let i=0;i<10;i++){const p=[-3.6+(i%6)*1.05,1.1+(i%2)*.23,((i%3)-1)*.55];const h=ball('Proton (H⁺)','light',p,[.11,.11,.11],0x7ce2c5);animated.push({obj:h,type:'proton',origin:p,phase:i*.65})}
+ ball('Thylakoid lumen','thylakoid',[0,1.8,0],[.3,.2,.3],0x7ce2c5,.7);
+ ball('Stroma side','stroma',[0,-1.5,0],[.3,.2,.3],0x9adca9,.7);
+}
+function makeLight(){
+ document.querySelector('#sceneTitle').textContent='Light-dependent reactions · overview';
+ mesh(new THREE.BoxGeometry(8,.17,2.5),mat(0x357f63),'Thylakoid membrane','thylakoid');
+ ball('Photosystem II','psii',[-2.65,.35,0],[.52,.6,.55],0x70c6ee);
+ ball('Photosystem I','psi',[.5,.35,0],[.52,.6,.55],0xf3cb68);
+ ball('ATP synthase','atp',[2.65,.03,.1],[.28,.8,.3],0xb99af7);
+ line('Electron transport chain','etc',[[-2.1,.28,0],[-1.5,.55,.1],[-.8,.3,0],[-.25,.55,0]],.08,0xf0a35b);
+ line('Electron path','etc',[[-2.3,.8,0],[-1.5,1,.1],[-.5,.85,0],[.5,.9,0],[1.2,.7,0]],.035,0xffffff);
+ for(let i=0;i<9;i++){let p=[-3.5+(i%5)*1.2,1.2+(i%2)*.25,((i%3)-1)*.5];const h=ball('Proton (H⁺)','light',p,[.1,.1,.1],0x7ce2c5);animated.push({obj:h,type:'proton',origin:p,phase:i})}
+ ball('Water input (H₂O)','psii',[-3.2,-1.1,.2],[.22,.22,.22],0x5aa9ff);
+ ball('Oxygen output (O₂)','light',[-2.8,-1.7,.4],[.2,.2,.2],0xd8efff);
+ ball('ATP product','atp',[2.3,-1.1,.1],[.22,.22,.22],0xb99af7);
+ ball('NADPH product','psi',[.7,-1.25,.2],[.25,.25,.25],0xf3cb68);
+}
+function makeCalvin(){
+ document.querySelector('#sceneTitle').textContent='Calvin cycle · simplified pathway';
+ const center=[0,0,0];const nodes=[{p:[0,1.55,0],name:'Carbon fixation',topic:'calvin',c:0x6fc9a3},{p:[1.55,0,0],name:'Reduction',topic:'calvin',c:0x83a8f5},{p:[0,-1.55,0],name:'G3P output / RuBP regeneration',topic:'calvin',c:0xe4b96e},{p:[-1.55,0,0],name:'CO₂ input',topic:'calvin',c:0x70c6ee}];
+ nodes.forEach(n=>ball(n.name,n.topic,n.p,[.58,.45,.42],n.c));
+ line('Cycle pathway','calvin',[[0,1.05,0],[1.1,.55,0],[1.1,-.6,0],[0,-1.05,0],[-1.1,-.6,0],[-1.1,.55,0],[0,1.05,0]],.07,0x78e0c3);
+ ball('ATP and NADPH enter','light',[2.5,.8,0],[.3,.3,.3],0xb99af7);
+ ball('ADP and NADP⁺ return','light',[2.5,-.65,0],[.3,.3,.3],0x7c8df4);
+}
+function makeGas(){
+ document.querySelector('#sceneTitle').textContent='Gas particles · motion in a container';
+ mesh(new THREE.BoxGeometry(5.8,4.2,4.6),new THREE.MeshBasicMaterial({color:0x7895c0,wireframe:true,transparent:true,opacity:.7}),'Sealed container','gas');
+ for(let i=0;i<38;i++){const p=[(Math.random()-.5)*5.1,(Math.random()-.5)*3.6,(Math.random()-.5)*3.9];const b=ball(`Gas particle ${i+1}`,'gas',p,[.13,.13,.13],i%3===0?0xf0a35b:i%3===1?0x78e0c3:0x7c8df4);b.userData.glow=false;b.userData.velocity=new THREE.Vector3((Math.random()-.5)*2.5,(Math.random()-.5)*2.5,(Math.random()-.5)*2.5);animated.push({obj:b,type:'gas',bounds:[2.72,1.92,2.12]})}
+}
+function makeMitosis(){
+ document.querySelector('#sceneTitle').textContent='Mitosis · stage overview';
+ const stages=[['prophase',-4.3,0x9b8af7],['metaphase',-1.45,0x60c9e8],['anaphase',1.45,0xf0ad63],['telophase',4.3,0x75d9b1]];
+ stages.forEach(([topic,x,c])=>{const cell=mesh(new THREE.SphereGeometry(1,24,18),new THREE.MeshStandardMaterial({color:c,wireframe:true,transparent:true,opacity:.55}),topics[topic].title,topic,[x,0,0]);cell.scale.set(1.12,1.12,1.12);for(let k=0;k<4;k++){let xx=(topic==='anaphase'||topic==='telophase')?(k<2?-.34:.34):(k-1.5)*.23;const chr=mesh(new THREE.CapsuleGeometry(.075,.28,4,8),mat(c),`${topics[topic].title} chromosome`,topic,[x+xx,(k%2)*.3-.15,(k%3)*.1]);chr.rotation.z=(k%2)*.8}});
+ setCam([0,3.5,13]);
+}
+// ===== 5. UI: navigation, details panel, prompt routing, controls =====
+const $=s=>document.querySelector(s);
+/*==TRANS_START==*/
+// Transition timing [outgoing ms, incoming ms]. in = zoom into a child model, out = back to a parent, across = sibling in the same family.
+const TR_DUR={in:[150,170],out:[90,150],across:[90,110]};
+const easeIn=t=>t*t*t,easeOut=t=>1-Math.pow(1-t,3);
+function transitionDir(from,to){
+ if(from===to)return null;const pf=modelPath(from),pt=modelPath(to);
+ if(pt.slice(0,-1).includes(from))return'in';
+ if(pf.slice(0,-1).includes(to))return'out';
+ return pf[0]===pt[0]?'across':null; // unrelated models (chips, prompt) keep the instant swap
+}
+const trStart=(dir,now)=>({dir,phase:'out',t0:now,dur:TR_DUR[dir][0]});
+// Pure state machine: call once per frame. swap=true on the frame where the outgoing phase ends (build the new scene now).
+function trStep(tr,now){
+ const ph=tr.phase,p=Math.min(1,Math.max(0,(now-tr.t0)/tr.dur));
+ if(p<1)return{ph,p,swap:false,done:false};
+ if(ph==='out'){tr.phase='in';tr.t0=now;tr.dur=TR_DUR[tr.dir][1];return{ph,p:1,swap:true,done:false}}
+ return{ph,p:1,swap:false,done:true};
+}
+/*==TRANS_END==*/
+// Transition runtime. While running, input is ignored and OrbitControls is disabled; build() (chips, prompt) cancels it safely.
+let tr=null,lastPicked=null;
+const BG=new THREE.Color(0x09101e),_c=new THREE.Vector3(),_d=new THREE.Vector3(),_box=new THREE.Box3();
+const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+function endTr(){dirty=true;canvas.style.opacity='';$('#labels').style.opacity='';controls.enabled=true;tr=null}
+// Dim a material toward the scene background (no shader recompiles); already-translucent materials also lose opacity.
+function fadeMat(m,e){if(!m.color)return;const d=m.userData.tr||(m.userData.tr={c:m.color.clone(),o:m.opacity,i:m.envMapIntensity});m.color.copy(d.c).lerp(BG,.92*e);if('envMapIntensity' in m)m.envMapIntensity=d.i*(1-e);if(m.transparent)m.opacity=d.o*(1-e)}
+function navigate(kind){
+ if(tr)return;
+ if(kind===current)return build(kind);
+ if(!canEnter(current,kind))return; // central gate: nothing animated or instant gets past here without permission
+ let dir=transitionDir(current,kind);
+ if(!dir||reduced())return build(kind);
+ let focus=null;
+ if(dir==='in'){const o=lastPicked&&lastPicked.userData.topic===selected&&clickable.includes(lastPicked)?lastPicked:clickable.find(x=>x.userData.topic===selected&&!isBoundary(x));if(o)focus=o.parent!==root?o.parent:o;else dir='across'}
+ unhover();
+ tr=trStart(dir,performance.now());tr.kind=kind;tr.P0=camera.position.clone();tr.T0=controls.target.clone();controls.enabled=false;
+ if(focus){tr.focus=focus;tr.keep=new Set();focus.traverse(x=>tr.keep.add(x))}
+}
+function stepTr(){
+ if(!tr)return;const s=trStep(tr,performance.now());
+ if(s.ph==='out'){
+  if(tr.dir==='in'){const e=easeIn(s.p);tr.focus.updateMatrixWorld(true);_box.setFromObject(tr.focus).getCenter(_c);
+   camera.position.copy(tr.P0).addScaledVector(_d.subVectors(_c,tr.P0),.45*e);controls.target.copy(tr.T0).lerp(_c,e);
+   for(const o of clickable){const m=o.material;if(tr.keep.has(o)){if(m.emissive){m.emissive.setHex(0x4fe0b0);m.emissiveIntensity=.35+.5*e}}else fadeMat(m,e)}
+   $('#labels').style.opacity=String(1-e)}
+  else{canvas.style.opacity=String(1-s.p);if(tr.dir==='out')camera.position.copy(tr.P0).addScaledVector(_d.subVectors(tr.P0,tr.T0),.15*easeOut(s.p))}
+ }else{
+  const e=easeOut(s.p);canvas.style.opacity=String(e);$('#labels').style.opacity=String(e);camera.position.lerpVectors(tr.from,tr.to,e);
+ }
+ if(s.swap){ // outgoing phase finished: build the destination, hide it, then ease it in
+  tr.swapping=true;build(tr.kind);tr.swapping=false;
+  const M=MODELS[tr.kind];tr.to=new THREE.Vector3(...M.cam);tr.from=tr.to.clone().multiplyScalar(tr.dir==='in'?1.45:tr.dir==='out'?.78:1);
+  canvas.style.opacity='0';$('#labels').style.opacity='0';camera.position.copy(tr.from);
+ }
+ if(s.done)endTr();
+}
+function build(kind){
+ const M=MODELS[kind];if(!M)return;
+ if(tr&&!tr.swapping)endTr();lastPicked=null;dirty=true;
+ current=kind;clear();M.build();setCam(M.cam);root.rotation.y=0;$('#tip').hidden=true;
+ document.querySelectorAll('[data-kind]').forEach(b=>b.classList.toggle('active',b.dataset.kind===kind));
+ $('#status').textContent=M.mode;{const n=$('#modelNote');n.textContent=M.note||'';n.hidden=!M.note;$('#labelsBtn').hidden=!labels.length}
+ drawCrumbs();showInfo(M.start);
+}
+function drawCrumbs(){
+ const c=$('#crumbs');c.replaceChildren();const path=modelPath(current);
+ if(path.length>1){const up=path[path.length-2],bk=document.createElement('button');bk.textContent='← Back';bk.setAttribute('aria-label','Back to '+MODELS[up].label);bk.addEventListener('click',()=>navigate(up));c.append(bk)}
+ path.forEach((id,i)=>{const b=document.createElement('button'),last=i===path.length-1;b.textContent=MODELS[id].label;b.classList.toggle('active',last);if(last)b.setAttribute('aria-current','page');b.addEventListener('click',()=>navigate(id));c.append(b)});
+}
+function showInfo(key){
+ selected=key;paint();
+ const t=topics[key]||{title:key,category:'Model component',text:'Select a structure to inspect it.',source:null};
+ $('#infoTitle').textContent=t.title;$('#infoText').textContent=t.text;$('.tag').textContent=t.category;
+ $('#viewHint').textContent='Selected: '+t.title+(matchMedia('(max-width:740px)').matches?' · tap for details ↓':' · details in the panel');
+ const a=$('#source'),src=SOURCES[t.source];
+ if(src){a.href=src.url;a.textContent='Source: '+src.label+' ↗';a.style.display='block'}else a.style.display='none';
+ const kids=$('#children');kids.replaceChildren();
+ (t.children||[]).map(id=>actions[id]).filter(ac=>ac&&ac.target!==current).forEach(ac=>{
+  const b=document.createElement('button'),sp=document.createElement('span');b.title=ac.desc;b.append(ac.title+' ');
+  if(canEnter(current,ac.target)){sp.textContent='Open ↗';b.addEventListener('click',()=>navigate(ac.target))}
+  else{const need=resolveEntry(current,ac.target);b.disabled=true;b.setAttribute('aria-disabled','true');sp.textContent='Open '+MODELS[need].label+' first';b.title='This is inside '+MODELS[MODELS[ac.target].parent].label+'. Open '+MODELS[need].label+' first.'}
+  b.append(sp);kids.append(b)});
+}
+// Clicking a structure (mesh or label) always shows its information. It also opens another model only if the hierarchy allows it.
+function activateStructure(key,obj=null){
+ if(tr)return;
+ showInfo(key);
+ lastPicked=obj||clickable.find(o=>o.userData.topic===key&&!isBoundary(o))||null;
+ const dest=enterTarget(topics[key],current);
+ if(dest)navigate(dest);
+}
+function say(text,ids=[]){
+ const m=$('#promptMsg');m.replaceChildren();m.hidden=!text;if(!text)return;
+ const p=document.createElement('div');p.textContent=text;m.append(p);
+ if(ids.length){const c=document.createElement('div');c.className='chips';ids.forEach(id=>{const b=document.createElement('button');b.textContent=MODELS[id].label;b.addEventListener('click',()=>openModel(id));c.append(b)});m.append(c)}
+}
+// Chips and the prompt are "go to" requests and obey the same hierarchy: an unreachable model is replaced by the nearest permitted step toward it.
+function jump(id){
+ let dest=id;if(!ALLOW_MENU_JUMPS&&!canEnter(current,id))dest=resolveEntry(current,id);
+ if(tr||ALLOW_MENU_JUMPS){endTr();build(dest)}else navigate(dest);
+ return dest;
+}
+const redirectNote=(id,dest)=>dest===id?'':MODELS[id].label+' is inside '+MODELS[MODELS[id].parent].label+', so ModelLab opened '+MODELS[dest].label+' first. Select a structure or use the buttons to go deeper.';
+function openModel(id){$('#prompt').value=MODELS[id].example;say(redirectNote(id,jump(id)))}
+function generateFromPrompt(){
+ const text=$('#prompt').value.toLowerCase().trim();
+ if(!text)return say('Type a topic first, or choose a built-in model:',Object.keys(MODELS));
+ const r=routePrompt(text);
+ if(r.type==='none')return say('No built-in model matches that request. ModelLab can only choose between its hand-built models; it cannot generate new ones. Supported models:',Object.keys(MODELS));
+ if(r.type==='ambiguous')return say(r.why,r.options);
+ const d=jump(r.kind);
+ const others=r.hits.filter(h=>h!==d&&h!==r.kind).map(h=>MODELS[h].label);
+ say('Showing the built-in model: '+MODELS[d].label+'.'+(d!==r.kind?' '+redirectNote(r.kind,d):'')+(others.length?' Your prompt also mentions '+others.join(', ')+'. Open '+(others.length>1?'them':'it')+' by selecting a structure and using the buttons in the details panel, or the path above the model.':'')+(r.weak?' Plant cells share many of these organelles; the Plant cell model shows them too.':''));
+}
+$('#generate').addEventListener('click',generateFromPrompt);
+$('#prompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();generateFromPrompt()}});
+document.querySelectorAll('[data-kind]').forEach(b=>b.addEventListener('click',()=>openModel(b.dataset.kind)));
+$('#reset').addEventListener('click',()=>{if(tr)return;setCam(MODELS[current].cam);root.rotation.y=0;dirty=true});
+const syncPause=()=>{$('#pause').textContent=spinning?'Pause rotation':'Resume rotation'};
+const setSpeed=v=>{spinRate=Math.min(1.5,Math.max(.1,Math.round(v*10)/10));$('#speedVal').textContent='Speed ×'+spinRate.toFixed(1);$('#slower').disabled=spinRate<=.1;$('#faster').disabled=spinRate>=1.5};
+$('#labelsBtn').addEventListener('click',()=>{const h=!$('#labels').hidden;$('#labels').hidden=h;$('#labelsBtn').textContent=h?'Show labels':'Hide labels'});
+$('#pause').addEventListener('click',()=>{spinning=!spinning;syncPause()});
+$('#slower').addEventListener('click',()=>setSpeed(spinRate-.1));$('#faster').addEventListener('click',()=>setSpeed(spinRate+.1));
+const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),tip=document.querySelector('#tip');
+// Translucent/wireframe "shell" meshes (cell wall, membranes, envelopes) must not block clicks on what is inside them.
+const isShell=o=>o.material.wireframe||o.material.opacity<=.3;
+const isBoundary=o=>o.userData.boundary??isShell(o); // plant cell sets this explicitly; older scenes keep the shell rule
+function pick(e){const r=canvas.getBoundingClientRect();pointer.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1);raycaster.setFromCamera(pointer,camera);const seen=new Set(),objs=[];for(const h of raycaster.intersectObjects(clickable,false))if(!seen.has(h.object)){seen.add(h.object);objs.push(h.object)}return resolvePick(objs,isBoundary)}
+function paint(){dirty=true;for(const o of clickable){const m=o.material;if(!m.emissive)continue;const hv=o===hovered,sel=o.userData.glow!==false&&o.userData.topic===selected;
+ if(o.userData.op!==undefined){m.emissive.setHex(hv?0x5b9be0:sel?0x2fa383:0);m.emissiveIntensity=hv?.55:sel?.5:1;m.opacity=Math.min(1,o.userData.op+(sel?.2:hv?.12:0))}
+ else m.emissive.setHex(hv?0x3a5f8f:sel?0x1b4a3b:0)}}
+let down=null,lp=null,tick=0,lastMove=0;
+function hoverAt(){if(!lp||tr)return;const o=pick(lp);if(o!==hovered){hovered=o;paint()}canvas.style.cursor=o?'pointer':'grab';if(o){const vr=canvas.parentElement.getBoundingClientRect();tip.textContent=o.name;tip.style.left=lp.clientX-vr.left+'px';tip.style.top=lp.clientY-vr.top+'px';tip.hidden=false}else tip.hidden=true}
+function unhover(){lp=null;tip.hidden=true;if(hovered){hovered=null;paint()}}
+canvas.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];unhover()});
+canvas.addEventListener('click',e=>{if(tr)return;if(down&&Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;const o=pick(e);if(o)activateStructure(o.userData.topic,o)});
+canvas.addEventListener('pointermove',e=>{if(e.buttons||tr)return;const t=performance.now();if(t-lastMove<30)return;lastMove=t;lp={clientX:e.clientX,clientY:e.clientY};hoverAt()});
+canvas.addEventListener('pointerleave',unhover);
+new ResizeObserver(()=>{const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;dirty=true;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}).observe(canvas);
+function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.04);if(spinning)root.rotation.y+=dt*spinRate;for(const a of animated){if(a.type==='gas'){a.obj.position.addScaledVector(a.obj.userData.velocity,dt);['x','y','z'].forEach((k,i)=>{const lim=a.bounds[i];if(Math.abs(a.obj.position[k])>lim){a.obj.position[k]=THREE.MathUtils.clamp(a.obj.position[k],-lim,lim);a.obj.userData.velocity[k]*=-1}})}else if(a.type==='proton'){a.phase+=dt*.8;a.obj.position.y=a.origin[1]+Math.sin(a.phase)*.22;a.obj.position.x=a.origin[0]+Math.sin(a.phase*.7)*.14}}if(spinning&&lp&&++tick%8===0)hoverAt();const live=spinning||animated.length>0||!!tr;stepTr();controls.update();if(live||dirty){updateLabels();renderer.render(scene,camera);dirty=false}}
+// --- touch / iOS Safari ---
+if(matchMedia('(pointer:coarse)').matches)controls.enablePan=false; // two fingers = zoom only; Reset view recovers any view
+canvas.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false}); // stop Safari page-pinch-zoom starting on the model
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();$('#status').textContent='Graphics paused; restoring…'});
+canvas.addEventListener('webglcontextrestored',()=>{dirty=true;$('#status').textContent=MODELS[current].mode});
+document.addEventListener('visibilitychange',()=>{dirty=true});
+$('#viewHint').addEventListener('click',()=>{if(matchMedia('(max-width:740px)').matches)$('#info').scrollIntoView({behavior:'smooth',block:'start'})});
+build('plant');setSpeed(spinRate);syncPause();window.__mlReady=true;animate();
+</script>
+<script>
+(function(){const fail=m=>{const a=document.querySelector('#status'),b=document.querySelector('#infoText');if(a)a.textContent='3D view unavailable';if(b)b.textContent=m};
+document.querySelector('script[type=module]').addEventListener('error',()=>fail('The 3D library could not be loaded. ModelLab needs an internet connection to fetch Three.js from cdn.jsdelivr.net.'));
+window.addEventListener('error',e=>{if(!window.__mlReady)fail('The 3D view could not start. Check that WebGL is enabled in your browser. ('+(e.message||'unknown error')+')')})})();
+</script>
+</body></html>
